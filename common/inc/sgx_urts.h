@@ -42,7 +42,8 @@
 #include "sgx_report.h"
 
 #include <stddef.h>
-
+#include <linux/types.h>
+#include <linux/ioctl.h>
 
 #define MAX_EX_FEATURES_COUNT 32
 
@@ -161,7 +162,7 @@ uint64_t sgx_vaddr_translate(sgx_enclave_id_t enclave_id, unsigned long vaddr);
 
 /*lcy*/
 extern unsigned long m_codepad_addr;
-extern unsigned long m_datapad_addr
+extern unsigned long m_datapad_addr;
 /*ends 12.4*/
 #ifdef __cplusplus
 }
