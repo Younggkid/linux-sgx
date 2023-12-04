@@ -54,6 +54,13 @@
 #include <sys/mman.h>
 #include "sgx_enclave_common.h"
 
+/*lcy: Stroing the location of codepad and datapad*/
+#include "sgx_urts.h"
+
+unsigned long m_codepad_addr = 0;
+unsigned long m_datapad_addr = 0;
+/*ends 12.4*/
+
 const char * layout_id_str[] = {
     "Undefined",
     "HEAP_MIN",
@@ -571,7 +578,18 @@ int CLoader::build_secs(sgx_attributes_t * const secs_attr, sgx_config_id_t *con
     // m_secs.mr_enclave value is not set previously
     if(memcpy_s(&m_secs.mr_enclave, sizeof(sgx_measurement_t), &m_metadata->enclave_css.body.enclave_hash, sizeof(sgx_measurement_t)))
         return SGX_ERROR_UNEXPECTED;
+    /*lcy*/
+    if (m_start_addr) {
+        DOUT("Scratchpad Setup ..\n");
+        DOUT("Enclave Start Address: %p\n", m_start_addr);
+        m_codepad_addr += (unsigned long) m_start_addr;
+        m_datapad_addr += (unsigned long) m_start_addr;
+        DOUT("Codepad Address: %p\n", (void*) m_codepad_addr);
+        DOUT("Datapad Address: %p\n", (void*) m_datapad_addr);
+        DOUT("Scracthpad Setup Complete\n");
 
+    }
+    /**/
     return ret;
 }
 int CLoader::build_image(SGXLaunchToken * const lc, sgx_attributes_t * const secs_attr, sgx_config_id_t *config_id, sgx_config_svn_t config_svn, le_prd_css_file_t *prd_css_file, sgx_misc_attribute_t * const misc_attr)
@@ -667,6 +685,13 @@ int CLoader::validate_layout_table()
     std::vector<std::pair<uint64_t, uint64_t>> rva_vector;
     for (layout_t *layout = layout_start; layout < layout_end; layout++)
     {
+        /*lcy code and data pad setup*/
+        if (layout->entry.id == 25) { 
+          m_codepad_addr = layout->entry.rva;
+        } else if (layout->entry.id == 26) { 
+          m_datapad_addr = layout->entry.rva;
+        }
+        /*end*/
         if(!IS_GROUP_ID(layout->entry.id))  // layout entry
         {
             rva_vector.push_back(std::make_pair(layout->entry.rva, ((uint64_t)layout->entry.page_count) << SE_PAGE_SHIFT));

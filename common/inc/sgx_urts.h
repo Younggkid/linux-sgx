@@ -132,6 +132,37 @@ sgx_status_t SGXAPI sgx_get_target_info(
 	const sgx_enclave_id_t enclave_id,
 	sgx_target_info_t* target_info);
 
+// added by lcy
+#define MAXENCLAVES 5
+#define MAXPAGES 100000
+#define SGX_SIGFAULT 50
+
+enum protection_t {
+    DATA,
+    CODE,
+    RESTRICT
+};
+
+struct enclave {
+    __u64 addr;
+    unsigned long pageTable[MAXPAGES];
+    int pageProt[MAXPAGES];
+    int filled;
+};
+
+extern struct enclave enclaveTab[MAXENCLAVES];
+/*lcy*/
+int sgx_contact_driver(sgx_enclave_id_t enclave_id);
+int sgx_swap_page(sgx_enclave_id_t enclave_id, unsigned long addr, int mode);
+int sgx_swap_random_pages(sgx_enclave_id_t enclave_id, int mode);
+struct enclave* sgx_get_pagetable(sgx_enclave_id_t enclave_id);
+uint64_t sgx_vaddr_translate(sgx_enclave_id_t enclave_id, unsigned long vaddr);
+/*12.4*/
+
+/*lcy*/
+extern unsigned long m_codepad_addr;
+extern unsigned long m_datapad_addr
+/*ends 12.4*/
 #ifdef __cplusplus
 }
 #endif

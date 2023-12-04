@@ -98,6 +98,7 @@ enum sgx_page_flags {
 #define SGX_DRIVER_OUT_OF_TREE  0x2
 #define SGX_DRIVER_DCAP         0x3
 
+#define MAXENCLAVE 5
 
 
 
@@ -443,6 +444,11 @@ typedef int (*vdso_sgx_enter_enclave_t)(unsigned long rdi, unsigned long rsi,
 					unsigned long rdx, unsigned int function,
 					unsigned long r8,  unsigned long r9,
 					struct sgx_enclave_run *run);
+
+struct sgx_enclave_pginfo {
+	__u64 enclave_id;
+	__u64 pid;
+} __attribute__((packed));
 
 
 #endif /* _UAPI_ASM_X86_SGX_H */

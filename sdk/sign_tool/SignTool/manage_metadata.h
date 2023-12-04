@@ -50,6 +50,10 @@
 #define FEATURE_MUST_BE_ENABLED     1
 #define FEATURE_LOADER_SELECTS      2
 
+//lcy
+#define LAYOUT_ID_CODEPAD 25
+#define LAYOUT_ID_DATAPAD 26
+
 typedef enum _para_type_t
 {
     PRODID = 0,

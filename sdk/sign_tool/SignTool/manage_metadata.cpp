@@ -972,7 +972,24 @@ bool CMetadata::build_layout_table()
     memset(&guard_page, 0, sizeof(guard_page));
     guard_page.entry.id = LAYOUT_ID_GUARD;
     guard_page.entry.page_count = SE_GUARD_PAGE_SIZE >> SE_PAGE_SHIFT;
+    
+    /* lcy
+    add scratchpad here 12.4
+    */
+    // code scratchpad 
+    layout.entry.id = LAYOUT_ID_CODEPAD;
+    layout.entry.page_count = (uint32_t)(1);
+    layout.entry.attributes = ADD_PAGE_ONLY;
+    layout.entry.si_flags = SI_FLAGS_RWX;
+    m_layouts.push_back(layout);
 
+    // data scratchpad
+    layout.entry.id = LAYOUT_ID_DATAPAD;
+    layout.entry.page_count = (uint32_t)(1);
+    layout.entry.attributes = ADD_PAGE_ONLY;
+    layout.entry.si_flags = SI_FLAGS_RW;
+    m_layouts.push_back(layout);
+    /*ends*/
     std::vector<layout_t> thread_layouts;
     // heap
     layout.entry.id = LAYOUT_ID_HEAP_MIN;

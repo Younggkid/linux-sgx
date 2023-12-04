@@ -146,4 +146,9 @@ private:
 
 #define AbnormalTermination() (FALSE)
 
+#define DOUT(...) do {                                     \
+    printf("[SDK] (%s:%d) ", __FUNCTION__, __LINE__);      \
+    printf(__VA_ARGS__);                                   \ 
+} while(0);
+
 #endif
