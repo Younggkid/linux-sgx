@@ -211,7 +211,7 @@ int EnclaveCreatorHW::create_enclave(secs_t *secs, sgx_enclave_id_t *enclave_id,
     *start_addr = enclave_base;
     *enclave_id = se_atomic_inc64(&g_eid);
     //added by lcy
-    enclaveTab[(*enclave_id % MAXENCLAVES)].filled = 0;
+    //enclaveTab[(*enclave_id % MAXENCLAVES)].filled = 0;
 
     return error_api2urts(enclave_error);
 }
@@ -228,8 +228,8 @@ int EnclaveCreatorHW::add_enclave_page(sgx_enclave_id_t enclave_id, void *src, u
         data_properties |= ENCLAVE_PAGE_UNVALIDATED;
     }
     enclave_load_data((void*)(enclave_id + rva), SE_PAGE_SIZE, src, data_properties, &enclave_error);
-    struct enclave *enc = &enclaveTab[(enclave_id%MAXENCLAVES)];
-    int filled = enc->filled;
+    //struct enclave *enc = &enclaveTab[(enclave_id%MAXENCLAVES)];
+    //int filled = enc->filled;
     //todo
     return error_api2urts(enclave_error);
 }
