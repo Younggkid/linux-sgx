@@ -98,6 +98,7 @@ OBJ2 := urts.o               \
         get_thread_id.o      \
         prd_css_util.o       \
         urts_emm.o           \
+        sgx_kernel_comm.o    \
         edmm_utility.o
 
 OBJ3 := enter_enclave.o \

@@ -18,6 +18,11 @@
         sgx_create_enclave_from_buffer_ex;
         sgx_set_switchless_itf;
         sgx_get_metadata;
+        sgx_contact_driver;
+        sgx_get_pagetable;
+        get_pfault_counter;
+        reset_pfault_counter;
+        sgx_vaddr_translate;
     local:
         *;
 };

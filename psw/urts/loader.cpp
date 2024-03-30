@@ -54,12 +54,13 @@
 #include <sys/mman.h>
 #include "sgx_enclave_common.h"
 
-/*lcy: Stroing the location of codepad and datapad*/
+/*
+// lcy: Stroing the location of codepad and datapad
 #include "sgx_urts.h"
 
 unsigned long m_codepad_addr = 0;
 unsigned long m_datapad_addr = 0;
-/*ends 12.4*/
+*/
 
 const char * layout_id_str[] = {
     "Undefined",
@@ -173,7 +174,7 @@ int CLoader::build_mem_region(const section_info_t &sec_info)
     uint64_t offset = 0;
     sec_info_t sinfo;
     memset(&sinfo, 0, sizeof(sinfo));
-
+    SE_TRACE(SE_TRACE_DEBUG, "addr=0x%lx, raw_data_size=%lu\n",sec_info.rva,sec_info.raw_data_size);
     // Build pages of the section that are contain initialized data.  Each page
     // needs to be added individually as the page may hold relocation data, in
     // which case the page needs to be marked writable.
@@ -185,6 +186,7 @@ int CLoader::build_mem_region(const section_info_t &sec_info)
 
         if(is_relocation_page(rva, sec_info.bitmap) && !(sec_info.flag & SI_FLAG_W))
         {
+            SE_TRACE(SE_TRACE_DEBUG, "\nRELOCATION_PAGE!! offset = 0x%lx\n",offset);
             sinfo.flags = sec_info.flag | SI_FLAG_W;
             assert(g_enclave_creator != NULL);
             if(g_enclave_creator->use_se_hw() == true)
@@ -199,7 +201,7 @@ int CLoader::build_mem_region(const section_info_t &sec_info)
                 }
             }
         }
-
+        SE_TRACE(SE_TRACE_DEBUG, "\nadd page! offset = 0x%lx\n",offset);
         if (size == SE_PAGE_SIZE)
             ret = build_pages(rva, size, sec_info.raw_data + offset, sinfo, ADD_EXTEND_PAGE);
         else
@@ -217,6 +219,7 @@ int CLoader::build_mem_region(const section_info_t &sec_info)
     // there is no need to check the relocation bitmap.
     if(sec_info.virtual_size > offset)
     {
+        SE_TRACE(SE_TRACE_DEBUG, "\nUninitialized data! offset = 0x%lx\n",offset);
         uint64_t rva = sec_info.rva + offset;
         size_t size = (size_t)(ROUND_TO_PAGE(sec_info.virtual_size - offset + PAGE_OFFSET(rva)));
 
@@ -312,7 +315,7 @@ int CLoader::build_pages(const uint64_t start_rva, const uint64_t size, const vo
     uint64_t rva = start_rva;
 
     assert(IS_PAGE_ALIGNED(start_rva) && IS_PAGE_ALIGNED(size));
-
+    SE_TRACE(SE_TRACE_WARNING, "\nBuild pages: size is %d, start_rva is %p, source is %p!\n",size, start_rva, source);
     while(offset < size)
     {
         //call driver to add page;
@@ -579,7 +582,8 @@ int CLoader::build_secs(sgx_attributes_t * const secs_attr, sgx_config_id_t *con
     if(memcpy_s(&m_secs.mr_enclave, sizeof(sgx_measurement_t), &m_metadata->enclave_css.body.enclave_hash, sizeof(sgx_measurement_t)))
         return SGX_ERROR_UNEXPECTED;
     /*lcy*/
-    if (m_start_addr) {
+    
+    /*if (m_start_addr) {
         DOUT("Scratchpad Setup ..\n");
         DOUT("Enclave Start Address: %p\n", m_start_addr);
         m_codepad_addr += (unsigned long) m_start_addr;
@@ -588,8 +592,7 @@ int CLoader::build_secs(sgx_attributes_t * const secs_attr, sgx_config_id_t *con
         DOUT("Datapad Address: %p\n", (void*) m_datapad_addr);
         DOUT("Scracthpad Setup Complete\n");
 
-    }
-    /**/
+    }*/
     return ret;
 }
 int CLoader::build_image(SGXLaunchToken * const lc, sgx_attributes_t * const secs_attr, sgx_config_id_t *config_id, sgx_config_svn_t config_svn, le_prd_css_file_t *prd_css_file, sgx_misc_attribute_t * const misc_attr)
@@ -685,12 +688,14 @@ int CLoader::validate_layout_table()
     std::vector<std::pair<uint64_t, uint64_t>> rva_vector;
     for (layout_t *layout = layout_start; layout < layout_end; layout++)
     {
-        /*lcy code and data pad setup*/
+        // lcy code and data pad setup
+        /*
         if (layout->entry.id == 25) { 
           m_codepad_addr = layout->entry.rva;
         } else if (layout->entry.id == 26) { 
           m_datapad_addr = layout->entry.rva;
-        }
+        }*/
+        
         /*end*/
         if(!IS_GROUP_ID(layout->entry.id))  // layout entry
         {

@@ -98,7 +98,7 @@ enum sgx_page_flags {
 #define SGX_DRIVER_OUT_OF_TREE  0x2
 #define SGX_DRIVER_DCAP         0x3
 
-#define MAXENCLAVE 5
+//#define MAXENCLAVE 5
 
 
 
@@ -119,6 +119,11 @@ enum sgx_page_flags {
 #define SGX_IOC_ENCLAVE_REMOVE_PAGES \
     _IOWR(SGX_MAGIC, 0x07, struct sgx_enclave_remove_pages)
 
+// added by lcy
+#define SGX_IOC_ENCLAVE_VATRANS \
+	_IOW(SGX_MAGIC, 0x10, struct sgx_enclave_vatrans)
+#define SGX_IOC_ENCLAVE_PSETUP \
+	_IOW(SGX_MAGIC, 0x11, struct sgx_enclave_pginfo)
 
 /* Legacy OOT driver support for EDMM */
 #define SGX_IOC_ENCLAVE_EMODPR \
@@ -407,7 +412,7 @@ struct sgx_enclave_run {
  * @rsi:	Pass-through value for RSI
  * @rdx:	Pass-through value for RDX
  * @function:	ENCLU function, must be EENTER or ERESUME
- * @r8:		Pass-through value for R8
+ * @r8:		Pass-through value for R8_start_addr;
  * @r9:		Pass-through value for R9
  * @run:	struct sgx_enclave_run, must be non-NULL
  *
@@ -429,7 +434,7 @@ struct sgx_enclave_run {
  * stack (and modify RSP) to pass information to the optional user handler (see
  * below).
  *
- * Most exceptions reported on ENCLU, including those that occur within the
+ * Most exceptions reported on ENCLU, including those th_start_addr;at occur within the
  * enclave, are fixed up and reported synchronously instead of being delivered
  * via a standard signal. Debug Exceptions (#DB) and Breakpoints (#BP) are
  * never fixed up and are always delivered via standard signals. On synchronously
@@ -450,5 +455,10 @@ struct sgx_enclave_pginfo {
 	__u64 pid;
 } __attribute__((packed));
 
+struct sgx_enclave_vatrans {
+	__u64 enclave_id;
+	__u64 vaddr;
+	__u64 paddr;
+} __attribute__((packed));
 
 #endif /* _UAPI_ASM_X86_SGX_H */

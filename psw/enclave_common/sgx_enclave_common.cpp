@@ -591,7 +591,7 @@ extern "C" void* COMM_API enclave_create_ex(
     }
 
     secs_t* secs = (secs_t*)enclave_create_sgx->secs;
-    SE_TRACE(SE_TRACE_DEBUG, "\n secs->attibutes.flags = %llx, secs->attributes.xfrm = %llx \n", secs->attributes.flags, secs->attributes.xfrm);
+    SE_TRACE(SE_TRACE_DEBUG, "\n [test] secs->attibutes.flags = %llx, secs->attributes.xfrm = %llx \n", secs->attributes.flags, secs->attributes.xfrm);
 
     if (s_driver_type == SGX_DRIVER_UNKNOWN)
     {
@@ -1019,6 +1019,9 @@ extern "C" size_t COMM_API enclave_load_data(
     }
     else
     {
+        // lcy 2.22
+        // SE_TRACE(SE_TRACE_WARNING, "\nThis is a OOT driver!\n");
+        // SE_TRACE(SE_TRACE_WARNING, "\nNeed to add [%d] pages\n",pages);
         uint8_t page_data[SE_PAGE_SIZE]  __attribute__ ((aligned(4096)));
             
         uint8_t* source = (uint8_t*)source_buffer;
@@ -1041,7 +1044,8 @@ extern "C" size_t COMM_API enclave_load_data(
             addp.secinfo = POINTER_TO_U64(&sec_info);
             if (!(data_properties & ENCLAVE_PAGE_UNVALIDATED))
                 addp.mrmask |= 0xFFFF;
-
+            // lcy here call Driver
+            // SE_TRACE(SE_TRACE_WARNING, "\nAdd Page - %p to %p...\n", source, target_address);
             int ret = ioctl(s_hdevice, SGX_IOC_ENCLAVE_ADD_PAGE, &addp);
             if (ret) {
                 SE_TRACE(SE_TRACE_WARNING, "\nAdd Page - %p to %p... FAIL\n", source, target_address);
