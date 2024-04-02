@@ -44,6 +44,7 @@ int create_enclave(secs_t *secs, sgx_enclave_id_t *enclave_id, void **start_addr
 *@attr can be REMOVABLE
 */
 int add_enclave_page(sgx_enclave_id_t enclave_id, void *source, size_t offset, const sec_info_t &secinfo, uint32_t attr);
+int add_enclave_mince_page(sgx_enclave_id_t enclave_id, void *source, size_t offset, const sec_info_t &secinfo, uint32_t attr); //lcyy
 int init_enclave(sgx_enclave_id_t enclave_id, enclave_css_t *enclave_css, token_t *launch);
 int destroy_enclave(sgx_enclave_id_t enclave_id);
 
