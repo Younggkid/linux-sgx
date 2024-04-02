@@ -976,6 +976,7 @@ bool CMetadata::build_layout_table()
     /* lcy
     add scratchpad here 12.4
     */
+    /*
     // code scratchpad 
     layout.entry.id = LAYOUT_ID_CODEPAD;
     layout.entry.page_count = (uint32_t)(1);
@@ -989,6 +990,7 @@ bool CMetadata::build_layout_table()
     layout.entry.attributes = ADD_PAGE_ONLY;
     layout.entry.si_flags = SI_FLAGS_RW;
     m_layouts.push_back(layout);
+    */
     /*ends*/
     std::vector<layout_t> thread_layouts;
     // heap

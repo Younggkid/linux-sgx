@@ -61,6 +61,7 @@
 unsigned long m_codepad_addr = 0;
 unsigned long m_datapad_addr = 0;
 */
+#define ADD_MINCE_PAGE 0
 
 const char * layout_id_str[] = {
     "Undefined",
@@ -168,6 +169,71 @@ bool CLoader::is_relocation_page(const uint64_t rva, std::vector<uint8_t> *bitma
     return false;
 }
 
+// added by lcy
+// not testes in 4.2
+int CLoader::build_mince_mem_region(const section_info_t &sec_info) 
+{
+    int ret = SGX_SUCCESS;
+    uint64_t offset = 0;
+    sec_info_t sinfo;
+    memset(&sinfo, 0, sizeof(sinfo));
+
+     SE_TRACE(SE_TRACE_DEBUG, "addr=0x%lx, raw_data_size=%lu\n",sec_info.rva,sec_info.raw_data_size);
+
+     while(offset < sec_info.raw_data_size)
+    {
+        SE_TRACE(SE_TRACE_DEBUG, "\n Requesting mince pages!\n");
+        
+        uint64_t rva = sec_info.rva + offset;
+        uint64_t size = MIN((SE_PAGE_SIZE - PAGE_OFFSET(rva)), (sec_info.raw_data_size - offset));
+        sinfo.flags = sec_info.flag;
+
+        if(is_relocation_page(rva, sec_info.bitmap) && !(sec_info.flag & SI_FLAG_W))
+        {
+            SE_TRACE(SE_TRACE_DEBUG, "\nRELOCATION_PAGE!! offset = 0x%lx\n",offset);
+            sinfo.flags = sec_info.flag | SI_FLAG_W;
+            assert(g_enclave_creator != NULL);
+            if(g_enclave_creator->use_se_hw() == true)
+            {
+                ret = mprotect((void*)(TRIM_TO_PAGE(rva) + (uint64_t)m_start_addr), SE_PAGE_SIZE, 
+                               (int)(sinfo.flags & SI_MASK_MEM_ATTRIBUTE));
+                if(ret != 0)
+                {
+                    SE_TRACE(SE_TRACE_WARNING, "mprotect(rva=0x%llx, len=%d, flags=%d) failed\n",
+                             rva, SE_PAGE_SIZE, int(sinfo.flags & SI_MASK_MEM_ATTRIBUTE));
+                    return SGX_ERROR_UNEXPECTED;
+                }
+            }
+        }
+        SE_TRACE(SE_TRACE_DEBUG, "\nadd page! offset = 0x%lx\n",offset);
+        if (size == SE_PAGE_SIZE)
+            ret = build_pages(rva, size, sec_info.raw_data + offset, sinfo, ADD_EXTEND_PAGE);
+        else
+            ret = build_partial_page(rva, size, sec_info.raw_data + offset, sinfo, ADD_EXTEND_PAGE);
+        if(SGX_SUCCESS != ret)
+            return ret;
+
+        // only the first time that rva may be not page aligned
+        offset += SE_PAGE_SIZE - PAGE_OFFSET(rva);
+    }
+
+       if(sec_info.virtual_size > offset)
+    {
+        SE_TRACE(SE_TRACE_DEBUG, "\nUninitialized data! offset = 0x%lx\n",offset);
+        uint64_t rva = sec_info.rva + offset;
+        size_t size = (size_t)(ROUND_TO_PAGE(sec_info.virtual_size - offset + PAGE_OFFSET(rva)));
+
+        rva = TRIM_TO_PAGE(rva);
+
+        sinfo.flags = sec_info.flag;
+        if(SGX_SUCCESS != (ret = build_pages(rva, size, 0, sinfo, ADD_EXTEND_PAGE)))
+            return ret;
+    }
+
+    return SGX_SUCCESS;
+
+
+}
 int CLoader::build_mem_region(const section_info_t &sec_info)
 {
     int ret = SGX_SUCCESS;
@@ -175,6 +241,8 @@ int CLoader::build_mem_region(const section_info_t &sec_info)
     sec_info_t sinfo;
     memset(&sinfo, 0, sizeof(sinfo));
     SE_TRACE(SE_TRACE_DEBUG, "addr=0x%lx, raw_data_size=%lu\n",sec_info.rva,sec_info.raw_data_size);
+
+    
     // Build pages of the section that are contain initialized data.  Each page
     // needs to be added individually as the page may hold relocation data, in
     // which case the page needs to be marked writable.
@@ -318,7 +386,21 @@ int CLoader::build_pages(const uint64_t start_rva, const uint64_t size, const vo
     SE_TRACE(SE_TRACE_WARNING, "\nBuild pages: size is %d, start_rva is %p, source is %p!\n",size, start_rva, source);
     while(offset < size)
     {
-        //call driver to add page;
+        if (ADD_MINCE_PAGE == 1)
+        {
+            SE_TRACE(SE_TRACE_WARNING, "\nCALL MINCE PAGES HERE\n");
+             if(SGX_SUCCESS != (ret = get_enclave_creator()->add_enclave_mince_page(ENCLAVE_ID_IOCTL, GET_PTR(void, source, 0), rva, sinfo, attr)))
+        {
+            //if add page failed , we should remove enclave somewhere;
+            return ret;
+        }
+        offset += SE_PAGE_SIZE;
+        rva += SE_PAGE_SIZE;
+
+
+        }
+        else{
+            //call driver to add page;
         if(SGX_SUCCESS != (ret = get_enclave_creator()->add_enclave_page(ENCLAVE_ID_IOCTL, GET_PTR(void, source, 0), rva, sinfo, attr)))
         {
             //if add page failed , we should remove enclave somewhere;
@@ -326,6 +408,9 @@ int CLoader::build_pages(const uint64_t start_rva, const uint64_t size, const vo
         }
         offset += SE_PAGE_SIZE;
         rva += SE_PAGE_SIZE;
+        }
+        
+        
     }
 
     return SGX_SUCCESS;

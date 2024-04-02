@@ -206,6 +206,7 @@ struct sgx_enclave_add_page {
 	__u64	src;
 	__u64	secinfo;
 	__u16	mrmask;
+	__u16   mince_page;
 } __attribute__((packed));
 
 /**

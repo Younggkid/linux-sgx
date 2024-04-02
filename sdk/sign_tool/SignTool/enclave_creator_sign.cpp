@@ -130,6 +130,95 @@ int EnclaveCreatorST::create_enclave(secs_t *secs, sgx_enclave_id_t *enclave_id,
     return SGX_SUCCESS;
 }
 
+int EnclaveCreatorST::add_enclave_mince_page(sgx_enclave_id_t enclave_id, void *src, uint64_t offset, const sec_info_t &sinfo, uint32_t attr)
+{   
+    assert(m_ctx!=NULL);
+    UNUSED(enclave_id);
+    void* source = src;
+    uint8_t color_page[SE_PAGE_SIZE];
+    if(!source)
+    {
+        memset(color_page, 0, SE_PAGE_SIZE);
+        source = reinterpret_cast<void*>(&color_page);
+    }
+
+    for(unsigned int i = 0; i< sizeof(sinfo.reserved)/sizeof(sinfo.reserved[0]); i++)
+    {
+        if(sinfo.reserved[i] != 0)
+            return SGX_ERROR_UNEXPECTED;
+    }
+    /* sinfo.flags[64:16] should be 0 */
+    if((sinfo.flags & (~SI_FLAGS_EXTERNAL)) != 0)
+    {
+        return SGX_ERROR_UNEXPECTED;
+    }
+
+    //check the page attributes
+    if (!(attr & PAGE_ATTR_EADD))
+    {
+        return SGX_SUCCESS;
+    }
+
+    uint64_t page_offset = (uint64_t)offset;
+    if(elrange_size != 0)
+    {
+        page_offset += enclave_image_address - elrange_start_address;
+    }
+    
+    uint8_t eadd_val[SIZE_NAMED_VALUE] = "EADD\0\0\0";
+
+    uint8_t data_block[DATA_BLOCK_SIZE];
+    size_t db_offset = 0;
+    memset(data_block, 0, DATA_BLOCK_SIZE);
+    memcpy_s(data_block, sizeof(data_block), eadd_val, SIZE_NAMED_VALUE);
+    db_offset += SIZE_NAMED_VALUE;
+    memcpy_s(data_block+db_offset, sizeof(data_block)-db_offset, &page_offset, sizeof(page_offset));
+    db_offset += sizeof(page_offset);
+    memcpy_s(data_block+db_offset, sizeof(data_block)-db_offset, &sinfo, sizeof(data_block)-db_offset);
+    if(EVP_DigestUpdate(m_ctx, data_block, DATA_BLOCK_SIZE) != 1)
+    {
+        se_trace(SE_TRACE_DEBUG, "ERROR - EVP_digestUpdate: %s.\n", ERR_error_string(ERR_get_error(), NULL));
+        return SGX_ERROR_UNEXPECTED;
+    }
+
+    /* If the page need to eextend, do eextend. */
+    if((attr & ADD_EXTEND_PAGE) == ADD_EXTEND_PAGE)
+    {
+        uint8_t *pdata = (uint8_t *)source;
+        uint8_t eextend_val[SIZE_NAMED_VALUE] = "EEXTEND";
+
+#define EEXTEND_TIME  4 
+        for(int i = 0; i < SE_PAGE_SIZE; i += (DATA_BLOCK_SIZE * EEXTEND_TIME))
+        {
+            db_offset = 0;
+            memset(data_block, 0, DATA_BLOCK_SIZE);
+            memcpy_s(data_block, sizeof(data_block), eextend_val, SIZE_NAMED_VALUE);
+            db_offset += SIZE_NAMED_VALUE;
+            memcpy_s(data_block+db_offset, sizeof(data_block)-db_offset, &page_offset, sizeof(page_offset));
+            if(EVP_DigestUpdate(m_ctx, data_block, DATA_BLOCK_SIZE) != 1)
+            {
+                se_trace(SE_TRACE_DEBUG, "ERROR - EVP_digestUpdate: %s.\n", ERR_error_string(ERR_get_error(), NULL));
+                return SGX_ERROR_UNEXPECTED;
+            }
+
+            for(int j = 0; j < EEXTEND_TIME; j++)
+            {
+                memcpy_s(data_block, sizeof(data_block), pdata, DATA_BLOCK_SIZE);
+                if(EVP_DigestUpdate(m_ctx, data_block, DATA_BLOCK_SIZE) != 1)
+                {
+                    se_trace(SE_TRACE_DEBUG, "ERROR - EVP_digestUpdate: %s.\n", ERR_error_string(ERR_get_error(), NULL));
+                    return SGX_ERROR_UNEXPECTED;
+                }
+                pdata += DATA_BLOCK_SIZE;
+                page_offset += DATA_BLOCK_SIZE;
+            }
+        }
+    }
+
+    m_quota += SE_PAGE_SIZE;
+    return SGX_SUCCESS;
+}
+
 int EnclaveCreatorST::add_enclave_page(sgx_enclave_id_t enclave_id, void *src, uint64_t offset, const sec_info_t &sinfo, uint32_t attr)
 {   
     assert(m_ctx!=NULL);

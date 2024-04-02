@@ -37,6 +37,7 @@
 #include <sys/mman.h>
 #include <vector>
 #include <tuple>
+#include "stdio.h"
 
 namespace {
 /** the callback function to filter a section.
@@ -641,6 +642,7 @@ sgx_status_t ElfParser::run_parser()
     /* Get and check machine mode */
     if (!get_bin_fmt(elf_hdr, m_bin_fmt)) {
         SE_TRACE_ERROR("Bin fmt incorrect\n");
+        printf("\n error here!, at run_parser\n");
         return SGX_ERROR_MODE_INCOMPATIBLE;
     }
 

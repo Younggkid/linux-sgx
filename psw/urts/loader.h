@@ -71,6 +71,7 @@ public:
 
 private:
     int build_mem_region(const section_info_t &sec_info);
+    int build_mince_mem_region(const section_info_t &sec_info); // added by lcy
     int build_image(SGXLaunchToken * const lc, sgx_attributes_t * const secs_attr, sgx_config_id_t *config_id, sgx_config_svn_t config_svn, le_prd_css_file_t *prd_css_file, sgx_misc_attribute_t * const misc_attr);
     int build_secs(sgx_attributes_t * const secs_attr, sgx_config_id_t *config_id, sgx_config_svn_t config_svn, sgx_misc_attribute_t * const misc_attr);
     int build_context(const uint64_t start_rva, layout_entry_t *layout);

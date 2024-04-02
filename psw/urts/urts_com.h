@@ -57,7 +57,7 @@
 #define PARSER ElfParser
 #endif
 #include "xsave.h"
-
+#include "stdio.h"
 #include "ittnotify.h"
 #include "ittnotify_config.h"
 #include "ittnotify_types.h"
@@ -505,6 +505,7 @@ sgx_status_t _create_enclave_from_buffer_ex(const bool debug, uint8_t *base_addr
     if(get_enclave_creator()->use_se_hw() != (!parser.get_symbol_rva("g_global_data_sim")))
     {
         SE_TRACE_WARNING("HW and Simulation mode incompatibility detected. The enclave is linked with the incorrect tRTS library.\n");
+        printf("\n error here!, at from buffer\n");
         ret = SGX_ERROR_MODE_INCOMPATIBLE;
         goto clean_return;
     }
