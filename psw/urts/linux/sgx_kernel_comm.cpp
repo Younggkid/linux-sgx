@@ -116,6 +116,8 @@ struct enclave* sgx_get_pagetable(sgx_enclave_id_t enclave_id) {
 
 }
 // untested
+// need to redefine the SGX_IOC_ENCLAVE_VATRANS
+/*
 uint64_t sgx_vaddr_translate(sgx_enclave_id_t enclave_id, unsigned long vaddr)
 {
     int ret = 0;
@@ -147,6 +149,8 @@ uint64_t sgx_vaddr_translate(sgx_enclave_id_t enclave_id, unsigned long vaddr)
 
 
 }
+*/
+
 
 int sgx_contact_driver(sgx_enclave_id_t enclave_id)
 {

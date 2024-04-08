@@ -207,7 +207,7 @@ static bool measure_enclave(uint8_t *hash, const char *dllpath, const xml_parame
     {
         no_rel = ElfHelper<32>::dump_textrels(parser.get());
     }
-    if(no_rel == false && (IGNORE_REL_ERROR(option_flag_bits) == false)) // changed by chenyang
+    if(no_rel == false && !(IGNORE_REL_ERROR(option_flag_bits) == false)) // changed by chenyang, to do about option_flag_bits
     {
         close_handle(fh);
         se_trace(SE_TRACE_ERROR, TEXT_REL_ERROR);

@@ -120,8 +120,8 @@ enum sgx_page_flags {
     _IOWR(SGX_MAGIC, 0x07, struct sgx_enclave_remove_pages)
 
 // added by lcy
-#define SGX_IOC_ENCLAVE_VATRANS \
-	_IOW(SGX_MAGIC, 0x10, struct sgx_enclave_vatrans)
+#define SGX_IOC_ENCLAVE_ADD_MINCE_PAGE \
+	_IOW(SGX_MAGIC, 0x10, struct sgx_enclave_add_page)
 #define SGX_IOC_ENCLAVE_PSETUP \
 	_IOW(SGX_MAGIC, 0x11, struct sgx_enclave_pginfo)
 
@@ -201,12 +201,13 @@ struct sgx_enclave_create  {
  * @mrmask:	bitmask for the measured 256 byte chunks
  * @reserved:	reserved for future use
  */
+// lcy can't add field here? 4.5
 struct sgx_enclave_add_page {
 	__u64	addr;
 	__u64	src;
 	__u64	secinfo;
 	__u16	mrmask;
-	__u16   mince_page;
+	//__u16   mince_page;
 } __attribute__((packed));
 
 /**

@@ -95,7 +95,7 @@ extern "C" sgx_status_t __sgx_create_enclave_ex(const char *file_name,
     char resolved_path[PATH_MAX] = {0};
     file.name = realpath(file_name, resolved_path);
     file.name_len = (uint32_t)strnlen_s(resolved_path, PATH_MAX);
-
+    //SE_TRACE(SE_TRACE_ERROR, "call create enclave ex here!\n");
     ret = _create_enclave_ex(!!debug, fd, file, NULL, launch_token, launch_token_updated, enclave_id, misc_attr, ex_features, ex_features_p);
     if(SGX_SUCCESS != ret && misc_attr)
     {

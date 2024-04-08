@@ -93,6 +93,7 @@ typedef enum {
     ENCLAVE_PAGE_SS_FIRST = 5 << 8,       /* The page contains the first page of a Shadow Stack (future). */
     ENCLAVE_PAGE_SS_REST = 6 << 8,        /* The page contains a non-first page of a Shadow Stack (future). */
     ENCLAVE_PAGE_UNVALIDATED = 1 << 12,   /* The page contents that you supply are excluded from measurement and content validation. */
+    ENCLAVE_PAGE_MINCE = 1 << 24,
 } enclave_page_properties_t;
 
 /*

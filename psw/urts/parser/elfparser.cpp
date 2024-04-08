@@ -57,6 +57,7 @@ bool compare_section_name(const char* shstrtab,
                           const void* user_data)
 {
     // `shstrtab + shdr->sh_name' is the section name.
+    //SE_TRACE(SE_TRACE_WARNING, "entering compare_section_name!\n");
     return (!strcmp(shstrtab + shdr->sh_name, (const char*)user_data));
 }
 
@@ -77,7 +78,7 @@ const ElfW(Shdr)* get_section(const ElfW(Ehdr) *elf_hdr,
 
     // section header string table
     const char *shstrtab = GET_PTR(char, elf_hdr, shdr[elf_hdr->e_shstrndx].sh_offset);
-
+    SE_TRACE(SE_TRACE_WARNING, "elf_hdr->e_shnum is %d!\n",elf_hdr->e_shnum);
     for (unsigned idx = 0; idx < elf_hdr->e_shnum; ++idx, ++shdr)
     {
         SE_TRACE(SE_TRACE_DEBUG, "section [%u] %s: sh_addr = %x, sh_size = %x, sh_offset = %x, sh_name = %x\n",
@@ -85,7 +86,7 @@ const ElfW(Shdr)* get_section(const ElfW(Ehdr) *elf_hdr,
         if (f(shstrtab, shdr, user_data))
             return shdr;
     }
-
+    SE_TRACE(SE_TRACE_WARNING, "get_section RETURN HERE!\n");
     return NULL;
 }
 
@@ -641,9 +642,9 @@ sgx_status_t ElfParser::run_parser()
     }
     /* Get and check machine mode */
     if (!get_bin_fmt(elf_hdr, m_bin_fmt)) {
-        SE_TRACE_ERROR("Bin fmt incorrect\n");
-        printf("\n error here!, at run_parser\n");
-        return SGX_ERROR_MODE_INCOMPATIBLE;
+        SE_TRACE(SE_TRACE_DEBUG,"Bin fmt incorrect\n");
+        //printf("\n error here!, at run_parser\n");
+        return SGX_ERROR_INVALID_ENCLAVE;
     }
 
     /* Check if there is any overlap segment, and make sure the segment is 1 page aligned;
@@ -1067,6 +1068,7 @@ void ElfParser::get_pages_to_protect(uint64_t enclave_base_addr, std::vector<std
 bool ElfParser::is_enclave_encrypted() const
 {
     // if enclave is encrypted, enclave must contain section .pcltbl
+    SE_TRACE(SE_TRACE_WARNING, "enter is_enclave_encrypted!\n");
     const char* sec_name = ".pcltbl";
     const ElfW(Ehdr) *ehdr = (const ElfW(Ehdr) *)m_start_addr;
     return (NULL != get_section_by_name(ehdr, sec_name));

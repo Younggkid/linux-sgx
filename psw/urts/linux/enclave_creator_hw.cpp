@@ -253,6 +253,8 @@ int EnclaveCreatorHW::add_enclave_page(sgx_enclave_id_t enclave_id, void *src, u
     return error_api2urts(enclave_error);
 }
 
+
+//lcy added
 int EnclaveCreatorHW::add_enclave_mince_page(sgx_enclave_id_t enclave_id, void *src, uint64_t rva, const sec_info_t &sinfo, uint32_t attr)
 {
     assert((rva & ((1<<SE_PAGE_SHIFT)-1)) == 0);
@@ -264,29 +266,21 @@ int EnclaveCreatorHW::add_enclave_mince_page(sgx_enclave_id_t enclave_id, void *
     {
         data_properties |= ENCLAVE_PAGE_UNVALIDATED;
     }
+    // should add ENCLAVE_MINCE_PAGE here
     enclave_load_data((void*)(enclave_id + rva), SE_PAGE_SIZE, src, data_properties | ENCLAVE_PAGE_MINCE, &enclave_error);
     
     struct enclave *enc = &enclaveTab[(enclave_id%MAXENCLAVES)];
     int filled = enc->filled;
     enc->pageTable[filled] = (__u64)enclave_id + (__u64)rva;
 
-    /* to find memory permissions */
-    if ((sinfo.flags & SI_FLAG_R) && (sinfo.flags & SI_FLAG_W)) {
-	// data page
-	enc->pageProt[filled] = DATA;
-    } else if ((sinfo.flags & SI_FLAG_R) && (sinfo.flags & SI_FLAG_X)) {
-	// code page
-	enc->pageProt[filled] = CODE;
-    } else {
-	// restricted page (SECS, TCS etc.)
-	enc->pageProt[filled] = RESTRICT;
-    } 
-    
-    enc->filled++; 
 
 
     return error_api2urts(enclave_error);
 }
+
+
+
+
 
 int EnclaveCreatorHW::try_init_enclave(sgx_enclave_id_t enclave_id, enclave_css_t *enclave_css, token_t *launch)
 {

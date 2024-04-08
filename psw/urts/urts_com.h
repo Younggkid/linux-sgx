@@ -363,6 +363,7 @@ static int __create_enclave(BinParser &parser,
             isVTuneProfiling = false;
 
         bool is_SGX_DBG_OPTIN_set = false;
+
         is_SGX_DBG_OPTIN_set = is_SGX_DBG_OPTIN_variable_set();
         if (isVTuneProfiling || is_SGX_DBG_OPTIN_set)
         {
@@ -504,13 +505,16 @@ sgx_status_t _create_enclave_from_buffer_ex(const bool debug, uint8_t *base_addr
     //Make sure HW uRTS won't load simulation enclave and vice verse.
     if(get_enclave_creator()->use_se_hw() != (!parser.get_symbol_rva("g_global_data_sim")))
     {
-        SE_TRACE_WARNING("HW and Simulation mode incompatibility detected. The enclave is linked with the incorrect tRTS library.\n");
-        printf("\n error here!, at from buffer\n");
+        SE_TRACE(SE_TRACE_DEBUG, "use hardware is %d, use sim is %d\n",get_enclave_creator()->use_se_hw(), parser.get_symbol_rva("g_global_data_sim"));
+        SE_TRACE(SE_TRACE_DEBUG, "HW and Simulation mode incompatibility detected. The enclave is linked with the incorrect tRTS library.\n");
+        //printf("\n error here!, at from buffer\n");
         ret = SGX_ERROR_MODE_INCOMPATIBLE;
+        //ret = SGX_ERROR_INVALID_PARAMETER;
         goto clean_return;
     }
- 
+    SE_TRACE(SE_TRACE_WARNING, "pass hw test here!\n");
     res = get_ex_feature_pointer(SGX_CREATE_ENCLAVE_EX_PCL, ex_features, ex_features_p, &ex_fp);
+    SE_TRACE(SE_TRACE_WARNING, "res is %d\n",res);
     if (res == -1)
     {
         ret = SGX_ERROR_INVALID_PARAMETER;
@@ -521,6 +525,7 @@ sgx_status_t _create_enclave_from_buffer_ex(const bool debug, uint8_t *base_addr
     {
     
         // If no PCL feature request is input, the enclave should not be encrypted.
+        SE_TRACE(SE_TRACE_WARNING, "failed here!\n");
         ret = SGX_ERROR_PCL_ENCRYPTED;
         goto clean_return;
     }
@@ -530,12 +535,13 @@ sgx_status_t _create_enclave_from_buffer_ex(const bool debug, uint8_t *base_addr
         ret = SGX_ERROR_PCL_NOT_ENCRYPTED;
         goto clean_return;
     }
-
+    SE_TRACE(SE_TRACE_WARNING, "get metadata!\n");
     if(SGX_SUCCESS != (ret = get_metadata(&parser, debug,  &metadata, &sgx_misc_attr)))
     {
+        
         goto clean_return;
     }
-
+    SE_TRACE(SE_TRACE_WARNING, "get to check kss!\n");
     // Check KSS
     if (!(sgx_misc_attr.secs_attr.flags & SGX_FLAGS_KSS))
     {
@@ -572,7 +578,7 @@ sgx_status_t _create_enclave_from_buffer_ex(const bool debug, uint8_t *base_addr
     // init xave global variables for xsave/xrstor
     init_xsave_info();
 
-
+    SE_TRACE(SE_TRACE_WARNING, "call create enclave here!\n");
     //Need to set the whole misc_attr instead of just secs_attr.
     do {
         ret = __create_enclave(parser, base_addr, metadata, file, debug, lc, prd_css_file, enclave_id, misc_attr, ex_features, ex_features_p);
@@ -614,7 +620,7 @@ sgx_status_t _create_enclave_ex(const bool debug, se_file_handle_t pfile, se_fil
     mh = map_file(pfile, &file_size);
     if (!mh)
         return SGX_ERROR_OUT_OF_MEMORY;
-
+    //SE_TRACE(SE_TRACE_ERROR, "call create enclave from buffer ex here!\n");
     ret = _create_enclave_from_buffer_ex(debug, mh->base_addr, (uint64_t)(file_size), file, prd_css_file,
                                          enclave_id, misc_attr, ex_features, ex_features_p);
 

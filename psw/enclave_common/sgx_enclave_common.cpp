@@ -1017,6 +1017,7 @@ extern "C" size_t COMM_API enclave_load_data(
         }
          
     }
+    //DCAP and out-of-tree driver use same parameter for the SGX_IOC_ENCLAVE_ADD_PAGE
     else
     {
         // lcy 2.22
@@ -1029,9 +1030,17 @@ extern "C" size_t COMM_API enclave_load_data(
             source = page_data;
             memset(source, 0, SE_PAGE_SIZE);
         }
-        //DCAP and out-of-tree driver use same parameter for the SGX_IOC_ENCLAVE_ADD_PAGE
-        for (size_t i = 0; i < pages; i++) {
-            struct sgx_enclave_add_page addp = { 0, 0, 0, 0 };
+        
+        //lcy 3.31
+        // 4.3 test agin
+        
+        if((data_properties & ENCLAVE_PAGE_MINCE) == ENCLAVE_PAGE_MINCE) 
+        {
+            SE_TRACE(SE_TRACE_WARNING, "\nMince pages requested\n");
+            sec_info.flags &= ~ENCLAVE_PAGE_MINCE;
+
+            for (size_t i = 0; i < pages; i++) {
+            struct sgx_enclave_add_page addp = { 0, 0, 0, 0};
             addp.addr = POINTER_TO_U64((uint8_t*)target_address + SE_PAGE_SIZE * i);
             if(source_buffer != NULL)
             {
@@ -1045,7 +1054,39 @@ extern "C" size_t COMM_API enclave_load_data(
             if (!(data_properties & ENCLAVE_PAGE_UNVALIDATED))
                 addp.mrmask |= 0xFFFF;
             // lcy here call Driver
-            // SE_TRACE(SE_TRACE_WARNING, "\nAdd Page - %p to %p...\n", source, target_address);
+            SE_TRACE(SE_TRACE_WARNING, "\n[Mince] Add Page - %p to %p...\n", source, target_address);
+            //addp.mince_page = 1; //lcy
+            int ret = ioctl(s_hdevice, SGX_IOC_ENCLAVE_ADD_MINCE_PAGE, &addp);
+            if (ret) {
+                SE_TRACE(SE_TRACE_WARNING, "\nAdd Page - %p to %p... FAIL\n", source, target_address);
+
+                if (enclave_error != NULL)
+                    *enclave_error = error_driver2api(ret, errno);
+                return SE_PAGE_SIZE * i;
+            }
+        }
+
+        }
+        
+
+        else 
+        {
+            for (size_t i = 0; i < pages; i++) {
+            struct sgx_enclave_add_page addp = { 0, 0, 0, 0};
+            addp.addr = POINTER_TO_U64((uint8_t*)target_address + SE_PAGE_SIZE * i);
+            if(source_buffer != NULL)
+            {
+                addp.src = POINTER_TO_U64(source + SE_PAGE_SIZE * i);
+            }
+            else
+            {
+                addp.src = POINTER_TO_U64(source);
+            }
+            addp.secinfo = POINTER_TO_U64(&sec_info);
+            if (!(data_properties & ENCLAVE_PAGE_UNVALIDATED))
+                addp.mrmask |= 0xFFFF;
+            // lcy here call Driver
+            //SE_TRACE(SE_TRACE_WARNING, "\n[No-Mince] Add Page - %p to %p...\n", source, target_address);
             int ret = ioctl(s_hdevice, SGX_IOC_ENCLAVE_ADD_PAGE, &addp);
             if (ret) {
                 SE_TRACE(SE_TRACE_WARNING, "\nAdd Page - %p to %p... FAIL\n", source, target_address);
@@ -1054,6 +1095,7 @@ extern "C" size_t COMM_API enclave_load_data(
                     *enclave_error = error_driver2api(ret, errno);
                 return SE_PAGE_SIZE * i;
             }
+        }
         }
     }
 
