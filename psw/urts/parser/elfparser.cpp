@@ -527,9 +527,27 @@ Section* build_section(const uint8_t* raw_data, uint64_t size, uint64_t virtual_
     return NULL;
 }
 
+Section* build_mince_section(const uint8_t* start_addr, const ElfW(Ehdr) *elf_hdr)
+{
+    const ElfW(Shdr) *mince_shdr = get_section_by_name(elf_hdr, ".sgx_mince");
+    if (NULL == mince_shdr) {
+        SE_TRACE(SE_TRACE_DEBUG, "NO MINCE section found\n");
+        return NULL;
+    }
+
+    si_flags_t sf = SI_FLAG_REG | SI_FLAGS_RW;
+    return new Section(
+        GET_PTR(uint8_t, start_addr, mince_shdr->sh_offset),
+        mince_shdr->sh_size, mince_shdr->sh_size, mince_shdr->sh_addr, sf
+    );
+}
+
+
+
 bool build_regular_sections(const uint8_t* start_addr,
                             std::vector<Section *>& sections,
                             const Section*& tls_sec,
+                            Section*& mince_sec, // added by lcyy
                             uint64_t& metadata_offset,
                             uint64_t& metadata_block_size)
 {
@@ -542,7 +560,8 @@ bool build_regular_sections(const uint8_t* start_addr,
 
     if (get_meta_property(start_addr, elf_hdr, metadata_offset, metadata_block_size) == false)
         return false;
-
+    
+    mince_sec = build_mince_section(start_addr, elf_hdr);
     for (unsigned idx = 0; idx < elf_hdr->e_phnum; ++idx, ++prg_hdr)
     {
         Section* sec = NULL;
@@ -620,7 +639,7 @@ const Section* get_max_rva_section(const std::vector<Section*> sections)
 
 ElfParser::ElfParser (const uint8_t* start_addr, uint64_t len)
     :m_start_addr(start_addr), m_len(len), m_bin_fmt(BF_UNKNOWN),
-     m_tls_section(NULL), m_metadata_offset(0), m_metadata_block_size(0)
+     m_tls_section(NULL), m_mince_section(NULL), m_metadata_offset(0), m_metadata_block_size(0)
 {
     memset(&m_dyn_info, 0, sizeof(m_dyn_info));
 }
@@ -680,7 +699,7 @@ sgx_status_t ElfParser::run_parser()
     }
 
     /* build regular sections */
-    if (build_regular_sections(m_start_addr, m_sections, m_tls_section, m_metadata_offset, m_metadata_block_size))
+    if (build_regular_sections(m_start_addr, m_sections, m_tls_section, m_mince_section, m_metadata_offset, m_metadata_block_size))
         return SGX_SUCCESS;
     else {
         SE_TRACE_ERROR("Regular sections incorrect\n");
@@ -761,6 +780,26 @@ const Section* ElfParser::get_tls_section() const
 {
     return m_tls_section;
 }
+
+// added by lcy
+/*
+const uint8_t* ElfParser::get_mince_section_addr(const uint8_t *start_addr, const ElfW(Ehdr) *elf_hdr) const
+{
+    const ElfW(Shdr) *mince_shdr = get_section_by_name(elf_hdr, ".sgx_mince");
+    if (NULL == mince_shdr) {
+        SE_TRACE(SE_TRACE_DEBUG, "NO MINCE section found!\n");
+        return NULL;
+    }
+    SE_TRACE(SE_TRACE_DEBUG, "MINCE section found at %ld\n",(unsigned long)GET_PTR(uint8_t, start_addr, mince_shdr->sh_offset));
+    return GET_PTR(uint8_t, start_addr, mince_shdr->sh_offset);
+}
+*/
+
+const Section* ElfParser::get_mince_section() const
+{
+    return m_mince_section;
+}
+
 
 uint64_t ElfParser::get_symbol_rva(const char* name) const
 {

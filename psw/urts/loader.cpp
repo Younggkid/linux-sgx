@@ -207,7 +207,7 @@ int CLoader::build_mem_region(const section_info_t &sec_info)
                 }
             }
         }
-        SE_TRACE(SE_TRACE_DEBUG, "\nadd page! offset = 0x%lx\n",offset);
+        //SE_TRACE(SE_TRACE_DEBUG, "\nadd page! offset = 0x%lx\n",offset);
         if (size == SE_PAGE_SIZE)
             ret = build_pages(rva, size, sec_info.raw_data + offset, sinfo, ADD_EXTEND_PAGE);
         else
@@ -245,6 +245,14 @@ int CLoader::build_sections(std::vector<uint8_t> *bitmap)
     std::vector<Section*> sections = m_parser.get_sections();
     uint64_t max_rva =0;
     Section* last_section = NULL;
+    //void* mince_section = NULL;
+    
+    //mince_section = get_symbol_address(".sgx_mince");
+
+    //if (mince_section == NULL) SE_TRACE(SE_TRACE_WARNING, "\nget_symbol_address can not find MINCE!\n");
+    //else SE_TRACE(SE_TRACE_WARNING, "\nMINCE section address is %ld!\n",(unsigned long)mince_section);
+
+
 
     for(unsigned int i = 0; i < sections.size() ; i++)
     {
@@ -322,12 +330,19 @@ int CLoader::build_pages(const uint64_t start_rva, const uint64_t size, const vo
 
     assert(IS_PAGE_ALIGNED(start_rva) && IS_PAGE_ALIGNED(size));
     //SE_TRACE(SE_TRACE_WARNING, "\nBuild pages: size is %d, start_rva is %p, source is %p!\n",size, start_rva, source);
+    
+    const Section* mince_section = m_parser.get_mince_section();
+    
+    
+    if (mince_section != NULL) SE_TRACE(SE_TRACE_WARNING, "[MINCE] start at %lx\n",mince_section->get_rva());
+    else SE_TRACE(SE_TRACE_WARNING, "NOT find mince!\n");
+    
     while(offset < size)
     {
         
         if (false) // test point here
         {
-            SE_TRACE(SE_TRACE_WARNING, "\nCALL MINCE PAGES HERE\n");
+            //SE_TRACE(SE_TRACE_WARNING, "\nCALL MINCE PAGES HERE\n");
              if(SGX_SUCCESS != (ret = get_enclave_creator()->add_enclave_mince_page(ENCLAVE_ID_IOCTL, GET_PTR(void, source, 0), rva, sinfo, attr)))
         {
             //if add page failed , we should remove enclave somewhere;

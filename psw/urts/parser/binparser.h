@@ -80,6 +80,9 @@ public:
     // Get the TLS section
     virtual const Section* get_tls_section() const = 0;
 
+    // Get the Mince section
+    virtual const Section* get_mince_section() const = 0;
+
     virtual uint64_t get_symbol_rva(const char* name) const = 0;
 
     virtual bool get_reloc_bitmap(std::vector<uint8_t> &bitmap) = 0;
