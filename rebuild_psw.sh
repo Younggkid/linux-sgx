@@ -18,4 +18,4 @@ sudo apt-get update
 sudo apt-get install libsgx-launch libsgx-urts libsgx-enclave-common libsgx-uae-service
 sudo apt-get install libsgx-epid 
 sudo apt-get install libsgx-quote-ex 
-sudo apt-get install libsgx-dcap-ql libsgx-enclave-common-dbgsym libsgx-urts-dbgsyms
+sudo apt-get install libsgx-dcap-ql libsgx-enclave-common-dbgsym libsgx-urts-dbgsym

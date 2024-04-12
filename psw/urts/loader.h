@@ -71,12 +71,14 @@ public:
 
 private:
     int build_mem_region(const section_info_t &sec_info);
+    int build_mem_mince_region(const section_info_t &sec_info);
     int build_image(SGXLaunchToken * const lc, sgx_attributes_t * const secs_attr, sgx_config_id_t *config_id, sgx_config_svn_t config_svn, le_prd_css_file_t *prd_css_file, sgx_misc_attribute_t * const misc_attr);
     int build_secs(sgx_attributes_t * const secs_attr, sgx_config_id_t *config_id, sgx_config_svn_t config_svn, sgx_misc_attribute_t * const misc_attr);
     int build_context(const uint64_t start_rva, layout_entry_t *layout);
     int build_contexts(layout_t *layout_start, layout_t *layout_end, uint64_t delta);
     int build_partial_page(const uint64_t rva, const uint64_t size, const void *source, const sec_info_t &sinfo, const uint32_t attr);
     int build_pages(const uint64_t start_rva, const uint64_t size, const void *source, const sec_info_t &sinfo, const uint32_t attr);
+    int build_mince_pages(const uint64_t start_rva, const uint64_t size, const void *source, const sec_info_t &sinfo, const uint32_t attr);
     bool is_relocation_page(const uint64_t rva, std::vector<uint8_t> *bitmap);
 
     bool is_ae(const enclave_css_t *enclave_css);

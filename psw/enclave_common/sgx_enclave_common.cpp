@@ -1032,8 +1032,8 @@ extern "C" size_t COMM_API enclave_load_data(
         }
         
         //lcy 3.31
-        // 4.3 test agin
-        
+        // 4.3 test again
+        //4.12 test 
         if((data_properties & ENCLAVE_PAGE_MINCE) == ENCLAVE_PAGE_MINCE) 
         {
             SE_TRACE(SE_TRACE_WARNING, "\nMince pages requested\n");
