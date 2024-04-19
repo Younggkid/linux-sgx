@@ -229,6 +229,7 @@ int EnclaveCreatorHW::add_enclave_page(sgx_enclave_id_t enclave_id, void *src, u
     {
         data_properties |= ENCLAVE_PAGE_UNVALIDATED;
     }
+    SE_TRACE(SE_TRACE_DEBUG, "[normal] the data properties is %x\n",data_properties);
     enclave_load_data((void*)(enclave_id + rva), SE_PAGE_SIZE, src, data_properties, &enclave_error);
     
     struct enclave *enc = &enclaveTab[(enclave_id%MAXENCLAVES)];
@@ -267,6 +268,7 @@ int EnclaveCreatorHW::add_enclave_mince_page(sgx_enclave_id_t enclave_id, void *
         data_properties |= ENCLAVE_PAGE_UNVALIDATED;
     }
     // should add ENCLAVE_MINCE_PAGE here
+    SE_TRACE(SE_TRACE_DEBUG, "[mince] the data properties is %x\n",data_properties);
     enclave_load_data((void*)(enclave_id + rva), SE_PAGE_SIZE, src, data_properties | ENCLAVE_PAGE_MINCE, &enclave_error);
     
     struct enclave *enc = &enclaveTab[(enclave_id%MAXENCLAVES)];

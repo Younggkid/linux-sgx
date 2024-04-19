@@ -19,3 +19,6 @@ sudo apt-get install libsgx-launch libsgx-urts libsgx-enclave-common libsgx-uae-
 sudo apt-get install libsgx-epid 
 sudo apt-get install libsgx-quote-ex 
 sudo apt-get install libsgx-dcap-ql libsgx-enclave-common-dbgsym libsgx-urts-dbgsym
+
+sudo cp psw/urts/linux/libsgx_urts.so /lib/x86_64-linux-gnu//libsgx_urts.so
+sudo cp psw/enclave_common/libsgx_enclave_common.so /lib/x86_64-linux-gnu/libsgx_enclave_common.so

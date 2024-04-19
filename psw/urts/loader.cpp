@@ -61,7 +61,7 @@
 unsigned long m_codepad_addr = 0;
 unsigned long m_datapad_addr = 0;
 */
-//#define ADD_MINCE_PAGE 0
+
 
 const char * layout_id_str[] = {
     "Undefined",
@@ -209,7 +209,7 @@ int CLoader::build_mem_mince_region(const section_info_t &sec_info)
         //SE_TRACE(SE_TRACE_DEBUG, "\nadd page! offset = 0x%lx\n",offset);
         if (size == SE_PAGE_SIZE)
             ret = build_mince_pages(rva, size, sec_info.raw_data + offset, sinfo, ADD_EXTEND_PAGE);
-        else
+        else //assume no partial pages because of align
             ret = build_partial_page(rva, size, sec_info.raw_data + offset, sinfo, ADD_EXTEND_PAGE);
         if(SGX_SUCCESS != ret)
             return ret;
@@ -244,7 +244,7 @@ int CLoader::build_mem_region(const section_info_t &sec_info)
     uint64_t offset = 0;
     sec_info_t sinfo;
     memset(&sinfo, 0, sizeof(sinfo));
-    SE_TRACE(SE_TRACE_DEBUG, "addr=0x%lx, raw_data_size=%lu\n",sec_info.rva,sec_info.raw_data_size);
+    //SE_TRACE(SE_TRACE_DEBUG, "addr=0x%lx, raw_data_size=%lu\n",sec_info.rva,sec_info.raw_data_size);
 
     
     // Build pages of the section that are contain initialized data.  Each page
@@ -342,12 +342,13 @@ int CLoader::build_sections(std::vector<uint8_t> *bitmap)
             last_section = sections[i];
         }
         
+        SE_TRACE(SE_TRACE_WARNING, "The address is %lx\n",sections[i]->get_rva());
         section_info_t sec_info = { sections[i]->raw_data(), sections[i]->raw_data_size(), sections[i]->get_rva(), sections[i]->virtual_size(), sections[i]->get_si_flags(), bitmap };
         
         // sgx mince lcyy
         if (mince_section->get_rva() == sections[i]->get_rva())
         {
-            if(SGX_SUCCESS != (ret = build_mem_region(sec_info)))
+            if(SGX_SUCCESS != (ret = build_mem_mince_region(sec_info)))
             return ret;
         }
         else {
@@ -427,19 +428,45 @@ int CLoader::build_pages(const uint64_t start_rva, const uint64_t size, const vo
     int ret = SGX_SUCCESS;
     uint64_t offset = 0;
     uint64_t rva = start_rva;
-
-    assert(IS_PAGE_ALIGNED(start_rva) && IS_PAGE_ALIGNED(size));
-    //SE_TRACE(SE_TRACE_WARNING, "\nBuild pages: size is %d, start_rva is %p, source is %p!\n",size, start_rva, source);
     
+    // added by lcy in 4.14
+    uint64_t skip_rva = 0;
+    uint64_t skip_size = 0;
+    assert(IS_PAGE_ALIGNED(start_rva) && IS_PAGE_ALIGNED(size));
+    SE_TRACE(SE_TRACE_WARNING, "\nBuild pages: size is %d, start_rva is %p, source is %p!\n",size, start_rva, source);
+    
+    const Section* mince_section = m_parser.get_mince_section();
+    if (mince_section != NULL) 
+    {   
+        skip_rva = mince_section->get_rva();
+        skip_size = mince_section->virtual_size();
+    }
+
     while(offset < size)
     {
         
         //call driver to add page;
-        if(SGX_SUCCESS != (ret = get_enclave_creator()->add_enclave_page(ENCLAVE_ID_IOCTL, GET_PTR(void, source, 0), rva, sinfo, attr)))
-        {
-            //if add page failed , we should remove enclave somewhere;
-            return ret;
+        //skip build sgx_mince section
+        if (rva >= skip_rva + skip_size || rva + SE_PAGE_SIZE <= skip_rva) {
+            //SE_TRACE(SE_TRACE_WARNING, "\nThis is a [normal] page!\n");
+            if(SGX_SUCCESS != (ret = get_enclave_creator()->add_enclave_page(ENCLAVE_ID_IOCTL, GET_PTR(void, source, 0), rva, sinfo, attr)))
+            {
+                //if add page failed , we should remove enclave somewhere;
+                SE_TRACE(SE_TRACE_WARNING, "\nAdd [normal] page failed!!!\n");
+                return ret;
+            }
         }
+        else {
+            SE_TRACE(SE_TRACE_WARNING, "\nThis is a [mince] page!\n");
+            if(SGX_SUCCESS != (ret = get_enclave_creator()->add_enclave_mince_page(ENCLAVE_ID_IOCTL, GET_PTR(void, source, 0), rva, sinfo, attr)))
+            {
+                //if add page failed , we should remove enclave somewhere;
+                SE_TRACE(SE_TRACE_WARNING, "\nAdd [mince] page failed!!!\n");
+                return ret;
+            }
+
+        }
+        
         offset += SE_PAGE_SIZE;
         rva += SE_PAGE_SIZE;
         
