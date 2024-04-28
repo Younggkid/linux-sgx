@@ -312,10 +312,10 @@ int CLoader::build_sections(std::vector<uint8_t> *bitmap)
     uint64_t max_rva =0;
     Section* last_section = NULL;
 
-    const Section* mince_section = m_parser.get_mince_section();
+    //const Section* mince_section = m_parser.get_mince_section();
     
-    if (mince_section != NULL) SE_TRACE(SE_TRACE_WARNING, "[MINCE] start at %lx\n",mince_section->get_rva());
-    else SE_TRACE(SE_TRACE_WARNING, "NOT find mince!\n");
+    //if (mince_section != NULL) SE_TRACE(SE_TRACE_WARNING, "[MINCE] start at %lx\n",mince_section->get_rva());
+    //else SE_TRACE(SE_TRACE_WARNING, "NOT find mince!\n");
 
     for(unsigned int i = 0; i < sections.size() ; i++)
     {
@@ -345,16 +345,8 @@ int CLoader::build_sections(std::vector<uint8_t> *bitmap)
         SE_TRACE(SE_TRACE_WARNING, "The address is %lx\n",sections[i]->get_rva());
         section_info_t sec_info = { sections[i]->raw_data(), sections[i]->raw_data_size(), sections[i]->get_rva(), sections[i]->virtual_size(), sections[i]->get_si_flags(), bitmap };
         
-        // sgx mince lcyy
-        if (mince_section->get_rva() == sections[i]->get_rva())
-        {
-            if(SGX_SUCCESS != (ret = build_mem_mince_region(sec_info)))
+        if(SGX_SUCCESS != (ret = build_mem_region(sec_info)))
             return ret;
-        }
-        else {
-            if(SGX_SUCCESS != (ret = build_mem_region(sec_info)))
-            return ret;
-        }
         
     }
     

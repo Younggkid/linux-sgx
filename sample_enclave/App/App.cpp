@@ -29,11 +29,12 @@
  *
  */
 
-
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-
+#include <pthread.h>
+#include <sched.h>
 # include <unistd.h>
 # include <pwd.h>
 # define MAX_PATH FILENAME_MAX
@@ -44,7 +45,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-
+pthread_t thread1;
 unsigned long rdtsc_begin() {
     unsigned long a, d;
     asm volatile("mfence\n\t"
@@ -75,6 +76,32 @@ unsigned long rdtsc_end() {
     return a;
 }
 
+void *secure_timer_thread_function(void* param)
+{
+    secure_timer(global_eid);
+    return (void *)0;
+}
+
+void sched_threads(int i)
+{
+    printf("sched threads here!\n");
+    
+    int core_main = 0, core_timer = 2;
+    cpu_set_t cpus;
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+
+    CPU_ZERO(&cpus);
+    CPU_SET(core_main, &cpus);
+    sched_setaffinity(0,sizeof(cpu_set_t),&cpus);
+
+    CPU_ZERO(&cpus);
+    CPU_SET(core_timer, &cpus);
+    pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+    pthread_create(&thread1, &attr, secure_timer_thread_function, NULL);
+
+    pthread_setname_np(thread1, "sectimer");
+}
 /* Global EID shared by multiple threads */
 sgx_enclave_id_t global_eid = 0;
 
@@ -104,7 +131,8 @@ int SGX_CDECL main(int argc, char *argv[])
 
     // add ecall here!
     //int ret = sgx_contact_driver(global_eid);
-    //populate(global_eid);
+    sched_threads(0);
+    populate(global_eid);
     int start = rdtsc_begin();
     fibnacci(global_eid,12);
     int end = rdtsc_end();
@@ -113,8 +141,10 @@ int SGX_CDECL main(int argc, char *argv[])
     //ret = ecall_sgx_cpuid(global_eid, cpuid, 0x0);
     if (ret != SGX_SUCCESS)
         abort();
-
-    
+    sleep(2);
+    if(0!=pthread_cancel(thread1))
+        printf("cancel failed!\n");
+    int res = pthread_join(thread1, NULL);
     sgx_destroy_enclave(global_eid);
 
     printf("Info: SampleEnclave successfully returned.\n");

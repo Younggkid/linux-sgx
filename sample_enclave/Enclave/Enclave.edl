@@ -64,6 +64,7 @@ enclave {
         public void ecall_sgx_cpuid([out] int cpuinfo[4], int leaf);
         public void fibnacci(int n);
         public void populate();
+        public void secure_timer();
     };
     /*
      * ocall_print_string - invokes OCALL to display string buffer inside the enclave.
