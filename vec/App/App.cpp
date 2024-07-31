@@ -51,6 +51,36 @@ typedef struct _sgx_errlist_t {
     const char *sug; /* Suggestion */
 } sgx_errlist_t;
 
+uint64_t rdtsc_begin() {
+    uint64_t a, d;
+    asm volatile("mfence\n\t"
+                 "CPUID\n\t"
+                 "RDTSCP\n\t"
+                 "mov %%rdx, %0\n\t"
+                 "mov %%rax, %1\n\t"
+                 "mfence\n\t"
+                 : "=r"(d), "=r"(a)
+                 :
+                 : "%rax", "%rbx", "%rcx", "%rdx");
+    a = (d << 32) | a;
+    return a;
+}
+
+uint64_t rdtsc_end() {
+    uint64_t a, d;
+    asm volatile("mfence\n\t"
+                 "RDTSCP\n\t"
+                 "mov %%rdx, %0\n\t"
+                 "mov %%rax, %1\n\t"
+                 "CPUID\n\t"
+                 "mfence\n\t"
+                 : "=r"(d), "=r"(a)
+                 :
+                 : "%rax", "%rbx", "%rcx", "%rdx");
+    a = (d << 32) | a;
+    return a;
+}
+
 /* Error code returned by sgx_create_enclave */
 static sgx_errlist_t sgx_errlist[] = {
     {
@@ -233,11 +263,14 @@ int SGX_CDECL main(int argc, char *argv[])
         return -1; 
     }
     sched_threads(0);
-    for (int i=0;i<10;++i)
-    {
-        run_vec(global_eid);
+    unsigned long start = rdtsc_begin();
 
-    }
+    
+    run_vec(global_eid);
+
+    
+    unsigned long end = rdtsc_end();
+    printf("%ld",end - start);
     FILE *f = fopen("res-L2.txt","a+");
     fputs("\n",f);
     fclose(f);
@@ -248,7 +281,7 @@ int SGX_CDECL main(int argc, char *argv[])
     /* Destroy the enclave */
     sgx_destroy_enclave(global_eid);
     
-    printf("Info: Cxx11DemoEnclave successfully returned.\n");
+    //printf("Info: Cxx11DemoEnclave successfully returned.\n");
 
     //printf("Enter a character before exit ...\n");
     //getchar();
